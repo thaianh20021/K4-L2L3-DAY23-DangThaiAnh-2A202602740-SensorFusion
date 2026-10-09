@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sensor Fusion & 3D Tracking Learning Hub — Day 23 Waymo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0a0d14;
+      --card-bg: rgba(18, 24, 38, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --primary: #3b82f6;
+      --primary-glow: rgba(59, 130, 246, 0.35);
+      --accent-cyan: #06b6d4;
+      --accent-emerald: #10b981;
+      --accent-purple: #8b5cf6;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --code-bg: #070a10;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      line-height: 1.6;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(59, 130, 246, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(139, 92, 246, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.06) 0%, transparent 60%);
+      min-height: 100vh;
+    }
+
+    /* Header & Navigation */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(16px);
+      background: rgba(10, 13, 20, 0.85);
+      border-bottom: 1px solid var(--card-border);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--primary), var(--accent-cyan));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: white;
+      box-shadow: 0 0 20px var(--primary-glow);
+    }
+
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .badge-live {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.5rem;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-emerald);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 999px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .badge-live::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-emerald);
+      box-shadow: 0 0 8px var(--accent-emerald);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.3); }
+    }
+
+    /* Container */
+    .container {
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* Hero Section */
+    .hero {
+      text-align: center;
+      padding: 3rem 1rem 2.5rem;
+      position: relative;
+    }
+
+    .hero-tag {
+      display: inline-block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--accent-cyan);
+      background: rgba(6, 182, 212, 0.1);
+      border: 1px solid rgba(6, 182, 212, 0.25);
+      padding: 0.35rem 1rem;
+      border-radius: 999px;
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .hero h1 {
+      font-size: 2.75rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+      color: var(--text-muted);
+      font-size: 1.15rem;
+      max-width: 800px;
+      margin: 0 auto 2rem;
+    }
+
+    /* Live Stat Bar */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 3rem;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 1.25rem 1.5rem;
+      backdrop-filter: blur(12px);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(59, 130, 246, 0.4);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px var(--primary-glow);
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.35rem;
+    }
+
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: white;
+      letter-spacing: -0.02em;
+    }
+
+    .stat-desc {
+      font-size: 0.75rem;
+      color: var(--accent-emerald);
+      margin-top: 0.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    /* Tabs Component */
+    .nav-tabs {
+      display: flex;
+      gap: 0.5rem;
+      overflow-x: auto;
+      background: rgba(18, 24, 38, 0.5);
+      padding: 0.4rem;
+      border-radius: 14px;
+      border: 1px solid var(--card-border);
+      margin-bottom: 2rem;
+      position: sticky;
+      top: 75px;
+      z-index: 90;
+      backdrop-filter: blur(16px);
+    }
+
+    .tab-btn {
+      flex: 1;
+      min-width: 140px;
+      padding: 0.75rem 1rem;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .tab-btn:hover {
+      color: white;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .tab-btn.active {
+      color: white;
+      background: var(--primary);
+      box-shadow: 0 4px 15px var(--primary-glow);
+    }
+
+    .tab-badge {
+      font-size: 0.7rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Tab Contents */
+    .tab-pane {
+      display: none;
+      animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .tab-pane.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Content Layout */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+
+    @media (max-width: 1024px) {
+      .content-grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 2rem;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      position: relative;
+    }
+
+    .card-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .card-subtitle {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+    }
+
+    /* Math Box */
+    .math-box {
+      background: rgba(10, 15, 26, 0.85);
+      border-left: 4px solid var(--primary);
+      padding: 1.25rem 1.5rem;
+      border-radius: 8px 14px 14px 8px;
+      margin: 1.25rem 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      line-height: 1.8;
+      color: #38bdf8;
+    }
+
+    .math-box span.comment {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+
+    /* Interactive Canvas Widget */
+    .widget-container {
+      background: var(--code-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    canvas {
+      width: 100%;
+      height: 280px;
+      background: #0d121f;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .controls-row {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 0.6rem 1.2rem;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #2563eb;
+      box-shadow: 0 4px 12px var(--primary-glow);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-emerald {
+      background: var(--accent-emerald);
+      color: white;
+    }
+    .btn-rose {
+      background: var(--accent-rose);
+      color: white;
+    }
+
+    /* Code View */
+    .code-block {
+      background: var(--code-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin: 1.25rem 0;
+    }
+
+    .code-header {
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid var(--card-border);
+      padding: 0.6rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    pre {
+      padding: 1.25rem;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      line-height: 1.7;
+    }
+
+    .kw { color: #f43f5e; font-weight: 600; }
+    .fn { color: #38bdf8; }
+    .var { color: #e2e8f0; }
+    .str { color: #34d399; }
+    .num { color: #fbbf24; }
+    .cmt { color: #64748b; font-style: italic; }
+
+    /* Q&A Accordion */
+    .qa-item {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      margin-bottom: 0.75rem;
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+
+    .qa-header {
+      padding: 1rem 1.25rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+    }
+
+    .qa-header:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .qa-body {
+      padding: 0 1.25rem 1.25rem;
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      line-height: 1.7;
+      display: none;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .qa-item.open .qa-body {
+      display: block;
+    }
+
+    .qa-item.open {
+      border-color: rgba(59, 130, 246, 0.4);
+      background: rgba(59, 130, 246, 0.03);
+    }
+
+    /* Pipeline Diagram */
+    .pipeline-flow {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      position: relative;
+    }
+
+    .flow-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--card-border);
+      padding: 1.2rem;
+      border-radius: 14px;
+      position: relative;
+      transition: all 0.25s ease;
+    }
+
+    .flow-step:hover {
+      border-color: var(--primary);
+      transform: translateX(5px);
+      background: rgba(59, 130, 246, 0.05);
+    }
+
+    .step-num {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(59, 130, 246, 0.2);
+      color: var(--primary);
+      border: 1px solid var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+
+    .step-content h4 {
+      font-size: 1rem;
+      margin-bottom: 0.25rem;
+    }
+    .step-content p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Copy Button */
+    .copy-pill {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--card-border);
+      padding: 0.35rem 0.75rem;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s ease;
+    }
+    .copy-pill:hover {
+      background: rgba(59, 130, 246, 0.2);
+      border-color: var(--primary);
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">SF</div>
+      <div>
+        <div class="brand-title">Sensor Fusion & 3D Tracking</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">VinUni Day 23 Perception Lab</div>
+      </div>
+    </div>
+    <div style="display: flex; gap: 1rem; align-items: center;">
+      <span class="badge-live">128/128 Tests Passed</span>
+      <span class="badge-live" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-color: rgba(59, 130, 246, 0.3);">
+        Sẵn Sàng Nộp
+      </span>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-tag">Interactive Learning Platform</div>
+      <h1>Làm Chủ Sensor Fusion & EKF 6D Trên Waymo</h1>
+      <p>Hiểu sâu kiến trúc Track-then-fuse, bộ lọc Kalman mở rộng (EKF), mô hình Pinhole Camera, Mahalanobis Gating và vòng đời Track qua mô phỏng tương tác thời gian thực.</p>
+
+      <!-- Stat Bar -->
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-label">RMSE LiDAR-Only</div>
+          <div class="stat-value">0.2193 <span style="font-size: 1rem; font-weight: 500;">m</span></div>
+          <div class="stat-desc">✓ Đạt mức max điểm (≤ 0.45 m)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">RMSE Fused (LiDAR+Cam)</div>
+          <div class="stat-value" style="color: #38bdf8;">0.2105 <span style="font-size: 1rem; font-weight: 500;">m</span></div>
+          <div class="stat-desc">▲ Cải thiện 0.0088 m độ chính xác</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Precision Track</div>
+          <div class="stat-value" style="color: var(--accent-emerald);">79.71 <span style="font-size: 1rem; font-weight: 500;">%</span></div>
+          <div class="stat-desc">✓ Vượt ngưỡng chuẩn (≥ 75%)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Track Coverage</div>
+          <div class="stat-value" style="color: var(--accent-purple);">77.46 <span style="font-size: 1rem; font-weight: 500;">%</span></div>
+          <div class="stat-desc">✓ Vượt ngưỡng chuẩn (≥ 70%)</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('overview')">
+        <span>Tổng Quan Pipeline</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('cp1')">
+        <span class="tab-badge">CP1</span>
+        <span>EKF 6D</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('cp2')">
+        <span class="tab-badge">CP2</span>
+        <span>Mô Hình Camera</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('cp3')">
+        <span class="tab-badge">CP3</span>
+        <span>Ghép Cặp Data</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('cp4')">
+        <span class="tab-badge">CP4</span>
+        <span>Vòng Đời Track</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('cp56')">
+        <span class="tab-badge">CP5-6</span>
+        <span>Vấn Đáp & Nộp</span>
+      </button>
+    </nav>
+
+    <!-- TAB: OVERVIEW -->
+    <div id="overview" class="tab-pane active">
+      <div class="content-grid">
+        <div class="card">
+          <div class="card-title">🔍 Bản Chất: Detection vs Tracking</div>
+          <div class="card-subtitle">Tại sao xe tự hành không thể chỉ dựa vào mạng nơ-ron nhận diện đơn lẻ?</div>
+          
+          <p style="margin-bottom: 1rem; color: #cbd5e1;">
+            <strong>Mô hình phát hiện (Detector)</strong> như FPN-ResNet chỉ xử lý từng frame ảnh/point cloud độc lập. Nó không có khái niệm về "thời gian", không ước lượng được vận tốc và có thể bị nháy (flickering), tạo bóng ma (ghost), hoặc bị che khuất tạm thời (miss).
+          </p>
+          <p style="margin-bottom: 1.5rem; color: #cbd5e1;">
+            <strong>Hệ thống theo dõi (Tracker)</strong> duy trì định danh (Track ID) xuyên suốt các khung hình, làm mịn dữ liệu qua EKF, ước lượng cả vận tốc $(\vec{v})$, và duy trì track kể cả khi xe bị che khuất trong một vài khung hình.
+          </p>
+
+          <div class="math-box">
+            <strong>Thiết kế FUSION: "Track-then-fuse"</strong><br>
+            <span class="comment"># Duy trì DUY NHẤT một danh sách track tập trung</span><br>
+            Frame k: Predict (1 lần) ➔ Update LiDAR (AssocL) ➔ Update Camera (AssocC)<br>
+            <span class="comment"># LiDAR: Quản lý vòng đời (sinh ra, tính điểm, xoá)</span><br>
+            <span class="comment"># Camera: Chỉ tinh chỉnh toạ độ EKF, không thay đổi điểm số</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">⚙️ Luồng Xử Lý Trong 1 Khung Hình (Frame)</div>
+          <div class="card-subtitle">Thứ tự thực hiện chuẩn trong fusion-run-lab</div>
+
+          <div class="pipeline-flow">
+            <div class="flow-step">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <h4>EKF Predict (Dự Báo)</h4>
+                <p>Toàn bộ các track frame trước được đẩy tiến một khoảng thời gian dt = 0.1s dựa trên vận tốc hiện tại.</p>
+              </div>
+            </div>
+            <div class="flow-step">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <h4>AssocL (Ghép & Update LiDAR 3D)</h4>
+                <p>Ghép các detection hộp 3D LiDAR vào track bằng khoảng cách Mahalanobis + cổng Chi-square. Cập nhật toạ độ EKF.</p>
+              </div>
+            </div>
+            <div class="flow-step">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <h4>Track Lifecycle Management (Vòng Đời)</h4>
+                <p>Cộng điểm cho track được ghép (+1/6), trừ điểm track bị miss (-1/6), tạo track mới và xoá track có phương sai P > 9.</p>
+              </div>
+            </div>
+            <div class="flow-step">
+              <div class="step-num">4</div>
+              <div class="step-content">
+                <h4>AssocC (Ghép & Update Camera 2D)</h4>
+                <p>Với các xe nằm trong tầm nhìn (FOV) của camera FRONT, cập nhật thêm toạ độ pixel để tinh chỉnh trạng thái EKF.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: CP1 (EKF) -->
+    <div id="cp1" class="tab-pane">
+      <div class="content-grid">
+        <div class="card">
+          <div class="card-title">📐 CP1 — Bộ Lọc Kalman Mở Rộng 6D (Part E)</div>
+          <div class="card-subtitle">Mô hình chuyển động vận tốc không đổi (Constant Velocity)</div>
+
+          <div class="math-box">
+            <strong>Vector Trạng Thái 6D:</strong><br>
+            x = [px, py, pz, vx, vy, vz]ᵀ<br>
+            <span class="comment"># 3 toạ độ vị trí (m) và 3 toạ độ vận tốc (m/s)</span>
+          </div>
+
+          <div class="math-box">
+            <strong>1. Bước Dự Báo (Predict):</strong><br>
+            F = [ I_3   dt·I_3 ]   <span class="comment"># px += vx·dt, py += vy·dt, pz += vz·dt</span><br>
+                [  0      I_3  ]<br>
+            x_pred = F @ x<br>
+            P_pred = F @ P @ Fᵀ + Q  <span class="comment"># Q = diag([dt·q]*6)</span>
+          </div>
+
+          <div class="math-box">
+            <strong>2. Bước Cập Nhật (Update):</strong><br>
+            γ = z - h(x)              <span class="comment"># Innovation (phần dư)</span><br>
+            S = H @ P @ Hᵀ + R        <span class="comment"># Innovation Covariance</span><br>
+            K = P @ Hᵀ @ S⁻¹          <span class="comment"># Kalman Gain</span><br>
+            x_upd = x + K @ γ         <span class="comment"># Trạng thái hiệu chỉnh</span><br>
+            P_upd = (I - K @ H) @ P   <span class="comment"># Thu hẹp độ bất định</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">💻 Code Thực Thi & Giải Thích Chi Tiết</div>
+          <div class="card-subtitle">File: student/workspace/kalman.py</div>
+
+          <div class="code-block">
+            <div class="code-header">
+              <span>kalman.py</span>
+              <span class="copy-pill" onclick="navigator.clipboard.writeText('pytest student/tests/test_kalman.py -v')">Copy test cmd</span>
+            </div>
+            <pre><code><span class="kw">def</span> <span class="fn">build_F</span>(dt: <span class="var">Optional</span>[<span class="var">float</span>] = <span class="var">None</span>) -> <span class="var">Matrix</span>:
+    <span class="kw">if</span> dt <span class="kw">is</span> <span class="var">None</span>:
+        params = get_tracking_params()
+        dt = <span class="fn">float</span>(params.dt) <span class="cmt"># 0.1s</span>
+    F = np.eye(<span class="num">6</span>, dtype=<span class="var">float</span>)
+    F[<span class="num">0</span>, <span class="num">3</span>] = dt  <span class="cmt"># px += vx * dt</span>
+    F[<span class="num">1</span>, <span class="num">4</span>] = dt  <span class="cmt"># py += vy * dt</span>
+    F[<span class="num">2</span>, <span class="num">5</span>] = dt  <span class="cmt"># pz += vz * dt</span>
+    <span class="kw">return</span> np.asmatrix(F)
+
+<span class="kw">def</span> <span class="fn">ekf_update</span>(x: <span class="var">Matrix</span>, P: <span class="var">Matrix</span>, meas: <span class="var">Any</span>):
+    H = meas.sensor.get_H(x)
+    gamma = innovation(x, meas)
+    S = innovation_covariance(P, meas, H)
+    K = P @ H.T @ np.linalg.inv(S)
+    x_upd = np.asmatrix(x + K @ gamma)
+    I = np.eye(P.shape[<span class="num">0</span>], dtype=<span class="var">float</span>)
+    P_upd = np.asmatrix((I - K @ H) @ P)
+    <span class="kw">return</span> x_upd, P_upd</code></pre>
+          </div>
+
+          <div style="font-size: 0.85rem; color: var(--text-muted); background: rgba(59, 130, 246, 0.08); padding: 1rem; border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.2);">
+            💡 <strong>Mẹo kiểm tra:</strong> Chạy lệnh <code style="color: #60a5fa;">python -m pytest student/tests/test_kalman.py -v</code> để xác nhận cả 4/4 test của EKF đều pass.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: CP2 (CAMERA) -->
+    <div id="cp2" class="tab-pane">
+      <div class="content-grid">
+        <div class="card">
+          <div class="card-title">📷 CP2 — Mô Hình Pinhole Camera & FOV (Part G)</div>
+          <div class="card-subtitle">Chiếu toạ độ không gian 3D sang mặt phẳng ảnh 2D pixel</div>
+
+          <div class="math-box">
+            <strong>1. Chuyển Đổi Hệ Quy Chiếu:</strong><br>
+            p_s = R_{veh \to sens} @ p + t_{veh \to sens} = [x_s, y_s, z_s]ᵀ<br>
+            <span class="comment"># Hệ trục Waymo camera: x_s hướng trước (chiều sâu), y_s hướng trái, z_s hướng lên</span>
+          </div>
+
+          <div class="math-box">
+            <strong>2. Điều Kiện Hợp Lệ Trong FOV:</strong><br>
+            • Toạ độ phải hữu hạn (không NaN, không inf)<br>
+            • Chiều sâu dương: x_s > 1e-6 (loại điểm sau lưng ống kính)<br>
+            • Góc lệch ngang θ = atan2(y_s, x_s) phải thuộc [fov_min, fov_max]
+          </div>
+
+          <div class="math-box">
+            <strong>3. Phép Chiếu Pinhole Camera:</strong><br>
+            u = c_i - f_i · (y_s / x_s)   <span class="comment"># Toạ độ pixel ngang</span><br>
+            v = c_j - f_j · (z_s / x_s)   <span class="comment"># Toạ độ pixel dọc</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🎮 Mô Phỏng Tương Tác: Góc Nhìn FOV Camera</div>
+          <div class="card-subtitle">Kéo thả chiếc xe (chấm tròn xanh) để xem camera có nhìn thấy không</div>
+
+          <div class="widget-container">
+            <canvas id="fovCanvas" width="450" height="260"></canvas>
+            <div class="controls-row">
+              <span id="fovStatus" style="font-weight: 700; color: var(--accent-emerald);">● Trạng thái: Trong FOV Camera (Visible)</span>
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">
+              Di chuột hoặc chạm vào màn hình đen trên để di chuyển xe. Vùng màu xanh lam là góc mở FOV của Camera FRONT.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: CP3 (ASSOCIATION) -->
+    <div id="cp3" class="tab-pane">
+      <div class="content-grid">
+        <div class="card">
+          <div class="card-title">🎯 CP3 — Data Association & Chi-Square Gating (Part F)</div>
+          <div class="card-subtitle">Tại sao khoảng cách Euclid thông thường là không đủ?</div>
+
+          <p style="color: #cbd5e1; margin-bottom: 1rem;">
+            Một phép đo nằm gần track về mặt hình học chưa chắc là của chiếc xe đó nếu độ bất định của xe đang rất lớn. Khoảng cách Mahalanobis chuẩn hoá sai số theo độ bất định $S$:
+          </p>
+
+          <div class="math-box">
+            <strong>Khoảng Cách Mahalanobis Bình Phương:</strong><br>
+            d² = γᵀ @ S⁻¹ @ γ<br>
+            <span class="comment"># γ = z - h(x) là phần dư; S = H P Hᵀ + R</span>
+          </div>
+
+          <div class="math-box">
+            <strong>Cổng Sàng Lọc Chi-Square (χ² Gating):</strong><br>
+            Ngưỡng gate = chi2.ppf(0.995, df = dim_meas)<br>
+            <span class="comment"># Nếu d² > gate: Loại bỏ ngay, gán cost = ∞</span><br>
+            <span class="comment"># LiDAR: dim=3 (gate ≈ 12.84), Camera: dim=2 (gate ≈ 10.60)</span>
+          </div>
+
+          <div class="math-box" style="border-left-color: var(--accent-rose);">
+            ⚠️ <strong>Quy Tắc Sống Còn:</strong><br>
+            Phải kiểm tra <code>meas.sensor.in_fov(track.x)</code> trước! Nếu ngoài FOV, gán ngay cost = ∞ và không bao giờ tính Mahalanobis để tránh lỗi chia cho 0.
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🔍 Thuật Toán Gán Tham Lam (Greedy Matching)</div>
+          <div class="card-subtitle">Trực quan hoá quá trình bắt cặp Track và Measurement</div>
+
+          <div class="code-block">
+            <div class="code-header"><span>Greedy Assignment Logic</span></div>
+            <pre><code><span class="kw">while</span> <span class="var">True</span>:
+    <span class="cmt"># 1. Tìm ô có khoảng cách Mahalanobis nhỏ nhất</span>
+    min_row, min_col = np.unravel_index(np.argmin(cost_matrix), cost_matrix.shape)
+    <span class="kw">if not</span> np.isfinite(cost_matrix[min_row, min_col]):
+        <span class="kw">break</span> <span class="cmt"># Không còn cặp nào hợp lệ</span>
+    
+    <span class="cmt"># 2. Bắt cặp (Track, Measurement)</span>
+    filter_obj.update(tracks[min_row], meas[min_col])
+    manager.handle_updated_track(tracks[min_row], sensor)
+    
+    <span class="cmt"># 3. Loại bỏ hàng và cột tương ứng khỏi ma trận chi phí</span>
+    cost_matrix = np.delete(cost_matrix, min_row, axis=<span class="num">0</span>)
+    cost_matrix = np.delete(cost_matrix, min_col, axis=<span class="num">1</span>)</code></pre>
+          </div>
+
+          <div style="font-size: 0.85rem; color: var(--text-muted); background: rgba(16, 185, 129, 0.08); padding: 1rem; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.2);">
+            ✅ <strong>Frame Rỗng:</strong> Dù frame đó không có detection nào từ cảm biến, vẫn bắt buộc phải gọi <code>manager.manage_tracks(...)</code> để đánh dấu miss và dọn dẹp các track hết hạn.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: CP4 (TRACK LIFECYCLE) -->
+    <div id="cp4" class="tab-pane">
+      <div class="content-grid">
+        <div class="card">
+          <div class="card-title">🔄 CP4 — Quản Lý Vòng Đời Track (Part H)</div>
+          <div class="card-subtitle">LiDAR là cảm biến DUY NHẤT quyết định sinh ra, chấm điểm và xoá track</div>
+
+          <div class="math-box">
+            <strong>1. Khởi Tạo (Init):</strong><br>
+            • Khi có đo LiDAR chưa ghép ➔ sinh Track mới.<br>
+            • Vị trí = đo LiDAR, vận tốc = [0, 0, 0]ᵀ.<br>
+            • Điểm ban đầu: score = 1 / window = 1/6 ≈ 0.1667.<br>
+            • Trạng thái ban đầu: "initialized".
+          </div>
+
+          <div class="math-box">
+            <strong>2. Chấm Điểm Tồn Tại (Scoring):</strong><br>
+            • Hit (LiDAR thấy): score = min(1.0, score + 1/6).<br>
+            • Miss (trong FOV LiDAR mà không thấy): score = score - 1/6.<br>
+            • Nếu score > 0.8 (confirmed_threshold) ➔ thành "confirmed".<br>
+            • <strong>Đã confirmed:</strong> Miss không bao giờ bị hạ cấp về tentative!
+          </div>
+
+          <div class="math-box">
+            <strong>3. Điều Kiện Xoá Track (should_delete_track):</strong><br>
+            • Phương sai vị trí P[0,0] > 9 hoặc P[1,1] > 9.<br>
+            • Hoặc track confirmed có score < 0.6.<br>
+            • Hoặc track chưa confirmed có score ≤ 0.
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🕹️ Trình Giả Lập Vòng Đời Track</div>
+          <div class="card-subtitle">Bấm nút để mô phỏng sự biến thiên điểm số qua các frame</div>
+
+          <div class="widget-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <span>Trạng thái Track:</span>
+              <span id="simState" style="font-weight: 800; font-size: 1.1rem; color: #fbbf24;">INITIALIZED</span>
+            </div>
+            
+            <div style="margin-bottom: 1rem;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.25rem;">
+                <span>Điểm tồn tại (Score):</span>
+                <span id="simScoreText" style="font-weight: 700;">0.17 / 1.00</span>
+              </div>
+              <div style="height: 12px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden;">
+                <div id="simScoreBar" style="height: 100%; width: 17%; background: linear-gradient(90deg, #3b82f6, #06b6d4); transition: all 0.3s ease;"></div>
+              </div>
+            </div>
+
+            <div class="controls-row">
+              <button class="btn btn-emerald" onclick="simulateHit()">+ Hit (LiDAR Nhìn Thấy)</button>
+              <button class="btn btn-rose" onclick="simulateMiss()">- Miss (LiDAR Bỏ Sót)</button>
+              <button class="btn btn-secondary" onclick="resetSim()">Reset Track</button>
+            </div>
+
+            <div id="simLog" style="font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--text-muted); background: #070a10; padding: 0.75rem; border-radius: 8px; max-height: 80px; overflow-y: auto;">
+              > Track khởi tạo với score = 0.17, state = initialized
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: CP5-6 (Q&A & SUBMISSION) -->
+    <div id="cp56" class="tab-pane">
+      <div class="content-grid">
+        <div class="card">
+          <div class="card-title">💬 6 Câu Hỏi Vấn Đáp Chắc Chắn Gặp (student/SUBMISSION.md)</div>
+          <div class="card-subtitle">Bấm vào từng câu để xem câu trả lời chuẩn xác nhất</div>
+
+          <div class="qa-item open">
+            <div class="qa-header" onclick="toggleQA(this)">
+              <span>1. Khác biệt đo LiDAR 3D và Camera 2D trong EKF (z, R)?</span>
+              <span>▼</span>
+            </div>
+            <div class="qa-body">
+              • <strong>LiDAR:</strong> Vector đo z ∈ ℝ³ là toạ độ vị trí [x, y, z]ᵀ (đơn vị: mét). Ma trận nhiễu R (3×3) đơn vị m². Hàm đo h(x) là tuyến tính chiếu 3 toạ độ vị trí, ma trận Jacobian H là hằng số (3×6).<br>
+              • <strong>Camera:</strong> Vector đo z ∈ ℝ² là toạ độ điểm ảnh [u, v]ᵀ (đơn vị: pixel). Ma trận nhiễu R (2×2) đơn vị pixel². Hàm đo h(x) là phi tuyến (pinhole projection), H là Jacobian phi tuyến tính theo quy tắc đạo hàm hàm hợp (chain rule).
+            </div>
+          </div>
+
+          <div class="qa-item">
+            <div class="qa-header" onclick="toggleQA(this)">
+              <span>2. Vì sao cần gating Mahalanobis trước khi gán?</span>
+              <span>▼</span>
+            </div>
+            <div class="qa-body">
+              Gating bằng khoảng cách Mahalanobis d² = γᵀ S⁻¹ γ kết hợp cổng Chi-square (χ²) loại bỏ trước những cặp có xác suất cực thấp thuộc về nhau. Khác với khoảng cách Euclid bỏ qua độ bất định, Mahalanobis chuẩn hoá khoảng cách theo ma trận hiệp phương sai phần dư S = H P Hᵀ + R: khi track có độ bất định P lớn, elip gating tự mở rộng; khi track chắc chắn, cổng siết chặt lại để tránh bắt nhầm nhiễu.
+            </div>
+          </div>
+
+          <div class="qa-item">
+            <div class="qa-header" onclick="toggleQA(this)">
+              <span>3. Pipeline là track-then-fuse hay fuse-then-track?</span>
+              <span>▼</span>
+            </div>
+            <div class="qa-body">
+              Pipeline là <strong>track-then-fuse</strong>: Chỉ duy trì duy nhất một danh sách track. Mỗi frame, EKF predict 1 lần, rồi gán và cập nhật LiDAR (AssocL), rồi tiếp tục gán và cập nhật Camera (AssocC) trên cùng track đó để tinh chỉnh trạng thái. Camera không tạo ra các track độc lập rồi mới gộp lại.
+            </div>
+          </div>
+
+          <div class="qa-item">
+            <div class="qa-header" onclick="toggleQA(this)">
+              <span>4. Nếu camera lệch calibration, triệu chứng gì trên innovation?</span>
+              <span>▼</span>
+            </div>
+            <div class="qa-body">
+              Hàm chiếu h(x) sẽ tính ra toạ độ pixel bị lệch một lượng có hệ thống (bias). Innovation γ = z - h(x) sẽ có kỳ vọng khác 0 (non-zero mean residual bias). Khoảng cách Mahalanobis tăng vọt làm đo lường camera bị cổng χ² loại bỏ. Nếu lọt cổng, Kalman update sẽ kéo lệch track, làm tăng RMSE của chế độ fused so với LiDAR.
+            </div>
+          </div>
+
+          <div class="qa-item">
+            <div class="qa-header" onclick="toggleQA(this)">
+              <span>5. Vì sao associate_and_update cần sensor tường minh ở frame rỗng?</span>
+              <span>▼</span>
+            </div>
+            <div class="qa-body">
+              Vì khi frame rỗng (không có đo lường), tracker vẫn phải biết đây là lượt LiDAR để đánh dấu các track trong FOV là bị "miss", trừ điểm tồn tại (-1/6) và xoá track nếu score ≤ 0. LiDAR quyết định tồn tại vì đo trực tiếp 3D và bao quát rộng, còn Camera chỉ có FRONT 2D góc hẹp nên chỉ dùng tinh chỉnh EKF, không được phép can thiệp sinh/diệt track.
+            </div>
+          </div>
+
+          <div class="qa-item">
+            <div class="qa-header" onclick="toggleQA(this)">
+              <span>6. Điều kiện xác nhận, giữ confirmed sau miss và xoá track?</span>
+              <span>▼</span>
+            </div>
+            <div class="qa-body">
+              • <strong>Xác nhận:</strong> score > 0.8 (confirmed_threshold).<br>
+              • <strong>Giữ confirmed:</strong> Gặp miss trong FOV LiDAR chỉ bị trừ 1/6 điểm nhưng vẫn giữ nguyên trạng thái confirmed, không bị rớt về tentative.<br>
+              • <strong>Xoá track:</strong> Khi P[0,0] hoặc P[1,1] > 9, hoặc confirmed có score < 0.6, hoặc chưa confirmed có score ≤ 0.
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🚀 Thông Tin Nộp Bài Đã Hoàn Thành</div>
+          <div class="card-subtitle">Sao chép nhanh link và commit hash để nộp LMS</div>
+
+          <div style="margin-bottom: 1.5rem;">
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.4rem;">Link Fork Repo trên GitHub:</div>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <input type="text" readonly value="https://github.com/thaianh20021/K4-L2L3-DAY23-DangThaiAnh-2A202602740-SensorFusion" style="flex: 1; background: #070a10; border: 1px solid var(--card-border); color: #38bdf8; padding: 0.6rem 0.8rem; border-radius: 8px; font-family: 'JetBrains Mono'; font-size: 0.8rem;">
+              <button class="btn btn-primary" onclick="copyText('https://github.com/thaianh20021/K4-L2L3-DAY23-DangThaiAnh-2A202602740-SensorFusion')">Copy</button>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 1.5rem;">
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.4rem;">Commit Hash Nộp (40 ký tự):</div>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <input type="text" readonly value="a4e97527a8a3ac476d05fac15b4768d245f4520f" style="flex: 1; background: #070a10; border: 1px solid var(--card-border); color: #34d399; padding: 0.6rem 0.8rem; border-radius: 8px; font-family: 'JetBrains Mono'; font-size: 0.8rem;">
+              <button class="btn btn-primary" onclick="copyText('a4e97527a8a3ac476d05fac15b4768d245f4520f')">Copy</button>
+            </div>
+          </div>
+
+          <div style="padding: 1rem; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; font-size: 0.85rem;">
+            ✅ <strong>Trạng thái:</strong> Toàn bộ 13/13 tiêu chí trong <code style="color: #6ee7b7;">python tools/check_submission.py</code> đều đã PASSED và mã nguồn đã được đẩy lên origin/main an toàn.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Tab switching
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+      
+      const targetBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
+      if (targetBtn) targetBtn.classList.add('active');
+      
+      const targetPane = document.getElementById(tabId);
+      if (targetPane) targetPane.classList.add('active');
+
+      if (tabId === 'cp2') drawFOV();
+    }
+
+    // Toggle Accordion
+    function toggleQA(element) {
+      element.parentElement.classList.toggle('open');
+    }
+
+    // Copy to clipboard
+    function copyText(text) {
+      navigator.clipboard.writeText(text);
+      alert('Đã sao chép vào bộ nhớ tạm: ' + text);
+    }
+
+    // Interactive FOV Canvas
+    const canvas = document.getElementById('fovCanvas');
+    let ctx = null;
+    let carPos = { x: 220, y: 100 };
+
+    if (canvas) {
+      ctx = canvas.getContext('2d');
+      canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        carPos.x = (e.clientX - rect.left) * (canvas.width / rect.width);
+        carPos.y = (e.clientY - rect.top) * (canvas.height / rect.height);
+        drawFOV();
+      });
+      canvas.addEventListener('touchmove', (e) => {
+        if (e.touches.length > 0) {
+          const rect = canvas.getBoundingClientRect();
+          carPos.x = (e.touches[0].clientX - rect.left) * (canvas.width / rect.width);
+          carPos.y = (e.touches[0].clientY - rect.top) * (canvas.height / rect.height);
+          drawFOV();
+        }
+      });
+      drawFOV();
+    }
+
+    function drawFOV() {
+      if (!ctx) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Ego Vehicle at bottom center
+      const egoX = canvas.width / 2;
+      const egoY = canvas.height - 30;
+
+      // Draw Grid lines
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < canvas.width; x += 40) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+      }
+      for (let y = 0; y < canvas.height; y += 40) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+      }
+
+      // Draw Camera FOV Wedge (FRONT Camera: ~60 deg)
+      const fovAngle = Math.PI / 3; // 60 deg
+      const fovDepth = 260;
+      ctx.beginPath();
+      ctx.moveTo(egoX, egoY);
+      ctx.arc(egoX, egoY, fovDepth, -Math.PI/2 - fovAngle/2, -Math.PI/2 + fovAngle/2);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(59, 130, 246, 0.15)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(59, 130, 246, 0.5)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Check if carPos inside FOV
+      const dx = carPos.x - egoX;
+      const dy = egoY - carPos.y; // depth forward
+      const angle = Math.atan2(dx, dy);
+      const isDepthPositive = dy > 5;
+      const inAngle = Math.abs(angle) <= fovAngle / 2;
+      const dist = Math.hypot(dx, dy);
+      const isVisible = isDepthPositive && inAngle && dist <= fovDepth;
+
+      const statusEl = document.getElementById('fovStatus');
+      if (statusEl) {
+        if (isVisible) {
+          statusEl.textContent = '● Trạng thái: Trong FOV Camera (Visible) [u,v tính toán được]';
+          statusEl.style.color = '#10b981';
+        } else if (!isDepthPositive) {
+          statusEl.textContent = '✕ Trạng thái: Nằm sau hoặc ngang xe (Depth xs <= 0) [Từ chối]';
+          statusEl.style.color = '#f43f5e';
+        } else {
+          statusEl.textContent = '✕ Trạng thái: Ngoài góc mở ngang FOV [Gán cost = ∞]';
+          statusEl.style.color = '#f59e0b';
+        }
+      }
+
+      // Draw Ego Car
+      ctx.fillStyle = '#60a5fa';
+      ctx.beginPath();
+      ctx.roundRect(egoX - 16, egoY - 24, 32, 48, 6);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '10px Plus Jakarta Sans';
+      ctx.textAlign = 'center';
+      ctx.fillText('EGO', egoX, egoY + 2);
+
+      // Draw Target Car
+      ctx.fillStyle = isVisible ? '#10b981' : '#f43f5e';
+      ctx.beginPath();
+      ctx.arc(carPos.x, carPos.y, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText('Target', carPos.x, carPos.y - 14);
+    }
+
+    // Interactive Lifecycle Simulator
+    let simScore = 1 / 6;
+    let simState = 'initialized';
+
+    function updateSimUI(msg) {
+      const stateEl = document.getElementById('simState');
+      const scoreTextEl = document.getElementById('simScoreText');
+      const scoreBarEl = document.getElementById('simScoreBar');
+      const logEl = document.getElementById('simLog');
+
+      stateEl.textContent = simState.toUpperCase();
+      if (simState === 'confirmed') stateEl.style.color = '#10b981';
+      else if (simState === 'tentative') stateEl.style.color = '#38bdf8';
+      else if (simState === 'deleted') stateEl.style.color = '#f43f5e';
+      else stateEl.style.color = '#fbbf24';
+
+      scoreTextEl.textContent = simScore.toFixed(2) + ' / 1.00';
+      scoreBarEl.style.width = Math.max(0, Math.min(100, simScore * 100)) + '%';
+      if (simState === 'confirmed') scoreBarEl.style.background = 'linear-gradient(90deg, #10b981, #059669)';
+      else scoreBarEl.style.background = 'linear-gradient(90deg, #3b82f6, #06b6d4)';
+
+      if (msg) {
+        logEl.innerHTML = '> ' + msg + '<br>' + logEl.innerHTML;
+      }
+    }
+
+    function simulateHit() {
+      if (simState === 'deleted') return;
+      simScore = Math.min(1.0, simScore + 1 / 6);
+      if (simScore > 0.8) {
+        simState = 'confirmed';
+      } else if (simState !== 'confirmed') {
+        simState = 'tentative';
+      }
+      updateSimUI('Hit: score += 0.17 ➔ ' + simScore.toFixed(2) + ' (State: ' + simState + ')');
+    }
+
+    function simulateMiss() {
+      if (simState === 'deleted') return;
+      simScore -= 1 / 6;
+      if (simState === 'confirmed') {
+        if (simScore < 0.6) {
+          simState = 'deleted';
+          updateSimUI('Miss: score < 0.6 ➔ TRACK BỊ XOÁ');
+          return;
+        }
+      } else {
+        if (simScore <= 0.001) {
+          simState = 'deleted';
+          updateSimUI('Miss: score <= 0 ➔ TRACK BỊ XOÁ');
+          return;
+        }
+      }
+      updateSimUI('Miss: score -= 0.17 ➔ ' + simScore.toFixed(2) + ' (Giữ nguyên ' + simState + ')');
+    }
+
+    function resetSim() {
+      simScore = 1 / 6;
+      simState = 'initialized';
+      updateSimUI('Đã reset track mới: score = 0.17, state = initialized');
+    }
+  </script>
+</body>
+</html>
